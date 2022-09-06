@@ -1,0 +1,57 @@
+import asyncio
+from aiogram import types, Bot, Dispatcher, executor
+import uuid
+
+from config import token, chris_id, me, token2
+from keyboard import keybord
+from filters import contour, cartoonize, oil_painting
+
+
+bot = Bot(token=token)
+dp = Dispatcher(bot)
+
+
+@dp.message_handler()
+@dp.message_handler(commands=['help', 'start'])
+async def welcome(message: types.Message):        
+    if message.get_command() == '/help':
+        await message.answer('I am Moby Dick, the bot, created by Sergei Pogosian to help people. Send an image to get it photoshoped')    
+   
+    elif message.get_command() == '/start':
+        user = message.from_user    
+        username = user.username
+        await message.answer(f"You can communicate with my creator \nhttps://t.me/{username}")    
+   
+    else:
+        if message.from_id == chris_id:
+            bot.send_message(me, f'Your bitch answers you \n{message.text}')
+        with open('messages.txt', 'a') as f:
+            header = message.from_user.username + ' | ' +  str(message.from_id) + '\n'
+            blanks = 100 - len(header)
+            f.write(' ' * blanks + header)
+            f.write(message.text + '\n')
+            f.write('-' * 100 + '\n')
+        print(message.text)
+        await message.answer('Upload your photo, dumb girl, to see the cool filter 🧛‍♂')
+
+
+@dp.message_handler(content_types=['photo'])
+async def photoshop(message: types.Message):
+    photo_name = f'{uuid.uuid4()}.jpg'
+    await message.photo[-1].download(destination_file=f'media/input/{photo_name}')
+    await message.answer('The image is processing... Please wait')
+    cartoonize(f'media/input/{photo_name}', f'media/output/{photo_name}')
+    with open(f'media/output/{photo_name}', 'rb') as photo:
+        await message.answer_photo(photo)        
+
+
+async def SendMessage(text):        
+    await bot.send_message(chris_id, text)
+
+
+if __name__ == '__main__':
+    text = "Hello, chrisar17 👾. My creator has hunted you down. I'm purely advanced bot, so got something to say, bitch ?"
+    loop = asyncio.get_event_loop()
+    loop.create_task(SendMessage(text))    
+
+    executor.start_polling(dp, skip_updates=True)    
